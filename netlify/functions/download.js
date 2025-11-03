@@ -1,4 +1,4 @@
-const ytdl = require('ytdl-core');
+const play = require('play-dl');
 
 exports.handler = async (event, context) => {
     const headers = {
@@ -30,25 +30,18 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const info = await ytdl.getInfo(url, {
-            requestOptions: {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-                }
-            }
-        });
+        const info = await play.video_info(url);
+        const formats = await play.video_basic_info(url);
         const medias = [];
 
         // Process all formats
-        info.formats.forEach(format => {
+        formats.video_details.formats.forEach(format => {
             const media = {
                 formatId: parseInt(format.itag),
-                label: `${format.container} (${format.qualityLabel || format.audioBitrate + 'kbps'})`,
+                label: `${format.ext} (${format.quality || format.abr + 'kbps'})`,
                 type: format.hasVideo ? 'video' : 'audio',
-                ext: format.container,
-                quality: format.qualityLabel || format.audioBitrate + 'kbps',
+                ext: format.ext,
+                quality: format.quality || format.abr + 'kbps',
                 width: format.width || null,
                 height: format.height || null,
                 url: format.url,
@@ -57,9 +50,9 @@ exports.handler = async (event, context) => {
                 audioQuality: format.hasAudio ? 'AUDIO_QUALITY_MEDIUM' : null,
                 audioSampleRate: format.audioSampleRate || null,
                 mimeType: format.mimeType,
-                duration: parseInt(info.videoDetails.lengthSeconds),
+                duration: parseInt(info.video_details.durationInSec),
                 is_audio: format.hasAudio && !format.hasVideo,
-                extension: format.container
+                extension: format.ext
             };
             medias.push(media);
         });
@@ -67,10 +60,10 @@ exports.handler = async (event, context) => {
         const response = {
             url: url,
             source: 'youtube',
-            title: info.videoDetails.title,
-            author: info.videoDetails.author.name,
-            thumbnail: info.videoDetails.thumbnails[0].url,
-            duration: parseInt(info.videoDetails.lengthSeconds),
+            title: info.video_details.title,
+            author: info.video_details.channel.name,
+            thumbnail: info.video_details.thumbnails[0].url,
+            duration: parseInt(info.video_details.durationInSec),
             medias: medias,
             type: 'multiple',
             error: false,
