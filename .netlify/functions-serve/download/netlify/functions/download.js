@@ -1,7 +1,7 @@
 // netlify/functions/download.js
-var { exec } = require("child_process");
-var { promisify } = require("util");
-var execAsync = promisify(exec);
+import { exec } from 'child_process';
+import { promisify } from 'util';
+const execAsync = promisify(exec);
 exports.handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
