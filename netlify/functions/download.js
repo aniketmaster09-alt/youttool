@@ -1,4 +1,7 @@
 const ytdl = require('@distube/ytdl-core');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const execAsync = promisify(exec);
 
 exports.handler = async (event, context) => {
     const headers = {
