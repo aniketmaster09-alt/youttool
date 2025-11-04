@@ -62,15 +62,26 @@
                 }
             ]);
 
+            const sessionId = Math.random().toString(36).substring(2, 15);
+            const visitorId = Math.random().toString(36).substring(2, 22);
+            const timestamp = Math.floor(Date.now() / 1000);
+            
             const info = await ytdl.getInfo(url, {
                 agent,
                 requestOptions: {
                     transform: (parsed) => {
                         return Object.assign(parsed, {
                             headers: Object.assign(parsed.headers, {
-                                'Cookie': `CONSENT=YES+cb.20210328-17-p0.en+FX+${Math.floor(Math.random() * 999)}; VISITOR_INFO1_LIVE=dQw4w9WgXcQ; YSC=${Math.random().toString(36).substring(2, 15)}; PREF=f1=50000000&f6=40000000&hl=en&gl=US; GPS=1; ${cookieString}; _ga=GA1.1.584190117.1762224553; _ga_2HS60D2GS7=GS2.1.s1762224553$o1$g0$t1762224563$j50$l0$h0`,
+                                'Cookie': `CONSENT=YES+shp.gws-20240731-0_RC1.en+FX+${Math.floor(Math.random() * 999)}; VISITOR_INFO1_LIVE=${visitorId}; YSC=${sessionId}; PREF=f1=50000000&f6=40000000&hl=en&gl=US&f4=4000000; GPS=1; SOCS=CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg; __Secure-3PSIDCC=AKEyXzWxK-${Math.random().toString(36).substring(2, 15)}; LOGIN_INFO=AFmmF2swRQIhAK${Math.random().toString(36).substring(2, 15)}; ${cookieString}; _ga=GA1.1.584190117.1762224553; _ga_2HS60D2GS7=GS2.1.s1762224553$o1$g1$t${timestamp}$j50$l0$h0`,
                                 'X-YouTube-Client-Name': '1',
-                                'X-YouTube-Client-Version': '2.20210721.00.00'
+                                'X-YouTube-Client-Version': '2.20241105.01.00',
+                                'X-Goog-Visitor-Id': visitorId,
+                                'X-Origin': 'https://www.youtube.com',
+                                'Origin': 'https://www.youtube.com',
+                                'Referer': 'https://www.youtube.com/',
+                                'Sec-Ch-Ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+                                'Sec-Ch-Ua-Mobile': '?0',
+                                'Sec-Ch-Ua-Platform': '"Windows"'
                             })
                         });
                     }
