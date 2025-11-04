@@ -45,7 +45,28 @@
                 };
             }
 
-            const info = await play.video_info(url);
+            // Try with different options to bypass bot detection
+            let info;
+            try {
+                // First attempt with basic options
+                info = await play.video_info(url, { htmldata: false });
+            } catch (err1) {
+                try {
+                    // Second attempt with different settings
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Add delay
+                    info = await play.video_info(url, { htmldata: true });
+                } catch (err2) {
+                    // Third attempt - extract video ID and try different URL format
+                    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+                    if (videoId) {
+                        const altUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        info = await play.video_info(altUrl);
+                    } else {
+                        throw new Error('Unable to extract video information. YouTube may be blocking requests.');
+                    }
+                }
+            }
             const medias = [];
 
             const formats = info.format;
