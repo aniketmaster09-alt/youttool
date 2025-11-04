@@ -32,9 +32,9 @@ exports.handler = async (event, context) => {
         }
 
         const cookiesPath = path.join(process.cwd(), 'cookies', 'cookies.txt');
-        const info = await ytdlp.getInfo(url, {
-            cookies: cookiesPath,
-            dumpSingleJson: true
+        const info = await ytdlp(url, {
+            dumpSingleJson: true,
+            cookies: cookiesPath
         });
         const medias = [];
 
