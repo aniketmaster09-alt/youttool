@@ -2,7 +2,7 @@ const ytdl = require('@distube/ytdl-core');
 
 exports.handler = async (event, context) => {
     const headers = {
-        'Access-Control-Allow-Origin': 'https://youttool.netlify.app',
+        'Access-Control-Allow-Origin': 'https://downr.org',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'POST, OPTIONS'
     };
