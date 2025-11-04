@@ -5,6 +5,6 @@
     "build": "echo 'No build required'"
   },
   "dependencies": {
-    "@distube/yt-dlp": "^1.0.4"
+    "youtube-dl-exec": "^2.4.13"
   }
 }
