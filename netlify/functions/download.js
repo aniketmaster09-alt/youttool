@@ -36,6 +36,11 @@ exports.handler = async (event, context) => {
             dumpSingleJson: true,
             cookies: cookiesPath
         });
+        
+        if (!info || !info.formats) {
+            throw new Error('No video information or formats found');
+        }
+        
         const medias = [];
 
         // Process all formats
