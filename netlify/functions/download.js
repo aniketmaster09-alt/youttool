@@ -32,12 +32,19 @@ exports.handler = async (event, context) => {
         }
 
         const info = await youtubedl(url, {
-            j: true,
-            flatPlaylist: true
+            dumpSingleJson: true,
+            noWarnings: true
         });
         
-        if (!info || !info.formats) {
-            throw new Error('No video information or formats found');
+        // Debug: log what we received
+        console.log('Received info:', JSON.stringify(info, null, 2));
+        
+        if (!info) {
+            throw new Error('No video information received');
+        }
+        
+        if (!info.formats) {
+            throw new Error(`No formats found. Received keys: ${Object.keys(info).join(', ')}`);
         }
         
         const medias = [];
