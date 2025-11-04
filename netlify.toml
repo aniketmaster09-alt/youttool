@@ -1,9 +1,9 @@
 [build]
   functions = "netlify/functions"
-  command = "pip install -r requirements.txt"
+  command = "python3 -m pip install -r requirements.txt"
 
 [build.environment]
-  PYTHON_VERSION = "3.9"
+  PYTHON_VERSION = "3.11"
   publish = "."
 
 [functions]
