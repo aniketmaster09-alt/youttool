@@ -1,4 +1,6 @@
-const play = require('play-dl');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const execAsync = promisify(exec);
 
 exports.handler = async (event, context) => {
     const headers = {
@@ -30,40 +32,45 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const info = await play.video_info(url);
-        const formats = await play.video_basic_info(url);
+        const { stdout } = await execAsync(`python -m yt_dlp -J "${url}"`);
+        const info = JSON.parse(stdout);
         const medias = [];
 
         // Process all formats
-        formats.video_details.formats.forEach(format => {
-            const media = {
-                formatId: parseInt(format.itag),
-                label: `${format.ext} (${format.quality || format.abr + 'kbps'})`,
-                type: format.hasVideo ? 'video' : 'audio',
-                ext: format.ext,
-                quality: format.quality || format.abr + 'kbps',
-                width: format.width || null,
-                height: format.height || null,
-                url: format.url,
-                bitrate: format.bitrate || null,
-                fps: format.fps || null,
-                audioQuality: format.hasAudio ? 'AUDIO_QUALITY_MEDIUM' : null,
-                audioSampleRate: format.audioSampleRate || null,
-                mimeType: format.mimeType,
-                duration: parseInt(info.video_details.durationInSec),
-                is_audio: format.hasAudio && !format.hasVideo,
-                extension: format.ext
-            };
-            medias.push(media);
+        info.formats.forEach(format => {
+            if (format.url) {
+                const isVideo = format.vcodec && format.vcodec !== 'none';
+                const isAudio = format.acodec && format.acodec !== 'none';
+                
+                const media = {
+                    formatId: parseInt(format.format_id),
+                    label: `${format.ext} (${format.height ? format.height + 'p' : format.abr ? format.abr + 'kb/s' : 'audio'})`,
+                    type: isVideo ? 'video' : 'audio',
+                    ext: format.ext,
+                    quality: `${format.ext} (${format.height ? format.height + 'p' : format.abr ? format.abr + 'kb/s' : 'audio'})`,
+                    width: format.width || null,
+                    height: format.height || null,
+                    url: format.url,
+                    bitrate: format.tbr ? Math.round(format.tbr * 1000) : format.abr ? Math.round(format.abr * 1000) : null,
+                    fps: format.fps || null,
+                    audioQuality: isAudio ? (format.abr > 100 ? 'AUDIO_QUALITY_MEDIUM' : 'AUDIO_QUALITY_LOW') : null,
+                    audioSampleRate: format.asr ? format.asr.toString() : null,
+                    mimeType: `${isVideo ? 'video' : 'audio'}/${format.ext}${format.vcodec ? '; codecs="' + format.vcodec + (isAudio ? ', ' + format.acodec : '') + '"' : ''}`,
+                    duration: Math.round(info.duration),
+                    is_audio: isAudio,
+                    extension: format.ext
+                };
+                medias.push(media);
+            }
         });
 
         const response = {
             url: url,
             source: 'youtube',
-            title: info.video_details.title,
-            author: info.video_details.channel.name,
-            thumbnail: info.video_details.thumbnails[0].url,
-            duration: parseInt(info.video_details.durationInSec),
+            title: info.title,
+            author: info.uploader || '',
+            thumbnail: info.thumbnail,
+            duration: Math.round(info.duration),
             medias: medias,
             type: 'multiple',
             error: false,
