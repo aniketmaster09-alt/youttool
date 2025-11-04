@@ -21,8 +21,10 @@
             };
         }
 
+        let url;
         try {
-            const { url } = JSON.parse(event.body);
+            const body = JSON.parse(event.body);
+            url = body.url;
             
             // Extract cookies from request headers
             const requestCookies = event.headers.cookie || '';
@@ -124,7 +126,7 @@
                     statusCode: 200,
                     headers,
                     body: JSON.stringify({
-                        url: url,
+                        url: url || 'Unknown URL',
                         source: 'youtube',
                         title: 'YouTube Video (Bot Detection Active)',
                         author: 'YouTube',
