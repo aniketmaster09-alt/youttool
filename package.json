@@ -5,6 +5,7 @@
     "build": "echo 'No build required'"
   },
   "dependencies": {
-    "youtube-dl-exec": "^2.4.13"
+    "puppeteer-core": "^22.0.0",
+    "chrome-aws-lambda": "^10.1.0"
   }
 }
