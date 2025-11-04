@@ -30,30 +30,40 @@ exports.handler = async (event, context) => {
             };
         }
 
+        if (!ytdl.validateURL(url)) {
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ error: 'Invalid YouTube URL format' })
+            };
+        }
+
         const info = await ytdl.getInfo(url);
         const medias = [];
 
         info.formats.forEach(format => {
+            if (!format.url) return;
+            
             const isVideo = format.hasVideo;
             const isAudio = format.hasAudio;
             
             const media = {
                 formatId: parseInt(format.itag),
-                label: `${format.container} (${format.qualityLabel || format.audioBitrate + 'kbps'})`,
+                label: `${format.container || 'unknown'} (${format.qualityLabel || (format.audioBitrate ? format.audioBitrate + 'kbps' : 'audio')})`,
                 type: isVideo ? 'video' : 'audio',
-                ext: format.container,
-                quality: format.qualityLabel || format.audioBitrate + 'kbps',
+                ext: format.container || 'mp4',
+                quality: format.qualityLabel || (format.audioBitrate ? format.audioBitrate + 'kbps' : 'audio'),
                 width: format.width || null,
                 height: format.height || null,
                 url: format.url,
-                bitrate: format.bitrate || null,
+                bitrate: format.bitrate || format.audioBitrate || null,
                 fps: format.fps || null,
                 audioQuality: isAudio ? (format.audioBitrate > 100 ? 'AUDIO_QUALITY_MEDIUM' : 'AUDIO_QUALITY_LOW') : null,
-                audioSampleRate: format.audioSampleRate || null,
-                mimeType: format.mimeType,
+                audioSampleRate: format.audioSampleRate ? format.audioSampleRate.toString() : null,
+                mimeType: format.mimeType || `${isVideo ? 'video' : 'audio'}/${format.container || 'mp4'}`,
                 duration: parseInt(info.videoDetails.lengthSeconds),
                 is_audio: isAudio,
-                extension: format.container
+                extension: format.container || 'mp4'
             };
             medias.push(media);
         });
@@ -63,7 +73,7 @@ exports.handler = async (event, context) => {
             source: 'youtube',
             title: info.videoDetails.title,
             author: info.videoDetails.author.name,
-            thumbnail: info.videoDetails.thumbnails[0].url,
+            thumbnail: info.videoDetails.thumbnails?.[0]?.url || '',
             duration: parseInt(info.videoDetails.lengthSeconds),
             medias: medias,
             type: 'multiple',
