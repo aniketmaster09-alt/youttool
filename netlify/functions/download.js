@@ -1,4 +1,4 @@
-const ytdlp = require('@distube/yt-dlp');
+const youtubedl = require('youtube-dl-exec');
 const path = require('path');
 
 exports.handler = async (event, context) => {
@@ -32,7 +32,7 @@ exports.handler = async (event, context) => {
         }
 
         const cookiesPath = path.join(process.cwd(), 'cookies', 'cookies.txt');
-        const info = await ytdlp(url, {
+        const info = await youtubedl(url, {
             dumpSingleJson: true,
             cookies: cookiesPath
         });
