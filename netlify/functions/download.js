@@ -32,7 +32,7 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const { stdout } = await execAsync(`python -m yt_dlp -J "${url}"`);
+        const { stdout } = await execAsync(`python3 -m yt_dlp -J "${url}"`);
         const info = JSON.parse(stdout);
         const medias = [];
 
