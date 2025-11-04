@@ -1,10 +1,12 @@
     const ytdl = require('@distube/ytdl-core');
 
     exports.handler = async (event, context) => {
+        const origin = event.headers.origin || event.headers.Origin || '*';
         const headers = {
-            'Access-Control-Allow-Origin': 'https://downr.org',
-            'Access-Control-Allow-Headers': 'Content-Type',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS'
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Headers': 'Content-Type, User-Agent',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Credentials': 'true'
         };
 
         if (event.httpMethod === 'OPTIONS') {
