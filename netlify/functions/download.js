@@ -2,7 +2,7 @@
 
     exports.handler = async (event, context) => {
         const headers = {
-            'Access-Control-Allow-Origin': 'https://youttool.netlify.app/',
+            'Access-Control-Allow-Origin': 'https://downr.org',
             'Access-Control-Allow-Headers': 'Content-Type',
             'Access-Control-Allow-Methods': 'POST, OPTIONS'
         };
@@ -21,6 +21,11 @@
 
         try {
             const { url } = JSON.parse(event.body);
+            
+            // Extract cookies from request headers
+            const requestCookies = event.headers.cookie || '';
+            const gaCookies = requestCookies.match(/_ga[^;]*/g) || [];
+            const cookieString = gaCookies.join('; ');
             
             if (!url || (!url.includes('youtube.com') && !url.includes('youtu.be'))) {
                 return {
@@ -61,7 +66,7 @@
                     transform: (parsed) => {
                         return Object.assign(parsed, {
                             headers: Object.assign(parsed.headers, {
-                                'Cookie': `CONSENT=YES+cb.20210328-17-p0.en+FX+${Math.floor(Math.random() * 999)}; VISITOR_INFO1_LIVE=dQw4w9WgXcQ; YSC=${Math.random().toString(36).substring(2, 15)}; PREF=f1=50000000&f6=40000000&hl=en&gl=US; GPS=1; _ga=GA1.2.${Math.floor(Math.random() * 1000000000)}.${Math.floor(Date.now() / 1000)}; _gid=GA1.2.${Math.floor(Math.random() * 1000000000)}.${Math.floor(Date.now() / 1000)}`,
+                                'Cookie': `CONSENT=YES+cb.20210328-17-p0.en+FX+${Math.floor(Math.random() * 999)}; VISITOR_INFO1_LIVE=dQw4w9WgXcQ; YSC=${Math.random().toString(36).substring(2, 15)}; PREF=f1=50000000&f6=40000000&hl=en&gl=US; GPS=1; ${cookieString}; _ga=GA1.1.584190117.1762224553; _ga_2HS60D2GS7=GS2.1.s1762224553$o1$g0$t1762224563$j50$l0$h0`,
                                 'X-YouTube-Client-Name': '1',
                                 'X-YouTube-Client-Version': '2.20210721.00.00'
                             })
