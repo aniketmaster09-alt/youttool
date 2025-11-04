@@ -1,170 +1,96 @@
-    const play = require('play-dl');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const path = require('path');
+const execAsync = promisify(exec);
 
-    exports.handler = async (event, context) => {
-        const origin = event.headers.origin || event.headers.Origin || '*';
-        const headers = {
-            'Access-Control-Allow-Origin': origin,
-            'Access-Control-Allow-Headers': 'Content-Type, User-Agent',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Credentials': 'true'
+exports.handler = async (event, context) => {
+    const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    };
+
+    if (event.httpMethod === 'OPTIONS') {
+        return { statusCode: 200, headers, body: '' };
+    }
+
+    if (event.httpMethod !== 'POST') {
+        return {
+            statusCode: 405,
+            headers,
+            body: JSON.stringify({ error: 'Method not allowed' })
         };
+    }
 
-        if (event.httpMethod === 'OPTIONS') {
-            return { statusCode: 200, headers, body: '' };
-        }
-
-        if (event.httpMethod !== 'POST') {
+    try {
+        const { url } = JSON.parse(event.body);
+        
+        if (!url || (!url.includes('youtube.com') && !url.includes('youtu.be'))) {
             return {
-                statusCode: 405,
+                statusCode: 400,
                 headers,
-                body: JSON.stringify({ error: 'Method not allowed' })
+                body: JSON.stringify({ error: 'Invalid YouTube URL' })
             };
         }
 
-        let url;
-        try {
-            const body = JSON.parse(event.body);
-            url = body.url;
-            
-            // Extract cookies from request headers
-            const requestCookies = event.headers.cookie || '';
-            const gaCookies = requestCookies.match(/_ga[^;]*/g) || [];
-            const cookieString = gaCookies.join('; ');
-            
-            if (!url || (!url.includes('youtube.com') && !url.includes('youtu.be'))) {
-                return {
-                    statusCode: 400,
-                    headers,
-                    body: JSON.stringify({ error: 'Invalid YouTube URL' })
-                };
-            }
+        const cookiesPath = path.join(process.cwd(), 'cookies', 'cookies.txt');
+        const { stdout } = await execAsync(`yt-dlp --cookies "${cookiesPath}" -J "${url}"`);
+        const info = JSON.parse(stdout);
+        const medias = [];
 
-            if (!play.yt_validate(url)) {
-                return {
-                    statusCode: 400,
-                    headers,
-                    body: JSON.stringify({ error: 'Invalid YouTube URL format' })
-                };
-            }
-
-            // Try with different options to bypass bot detection
-            let info;
-            try {
-                // First attempt with basic options
-                info = await play.video_info(url, { htmldata: false });
-            } catch (err1) {
-                try {
-                    // Second attempt with different settings
-                    await new Promise(resolve => setTimeout(resolve, 1000)); // Add delay
-                    info = await play.video_info(url, { htmldata: true });
-                } catch (err2) {
-                    // Third attempt - extract video ID and try different URL format
-                    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
-                    if (videoId) {
-                        const altUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        info = await play.video_info(altUrl);
-                    } else {
-                        throw new Error('Unable to extract video information. YouTube may be blocking requests.');
-                    }
-                }
-            }
-            const medias = [];
-
-            const formats = info.format;
-            
-            formats.forEach(format => {
-                if (!format.url) return;
-                
-                const isVideo = format.hasVideo !== false;
-                const isAudio = format.hasAudio !== false;
+        // Process all formats
+        info.formats.forEach(format => {
+            if (format.url) {
+                const isVideo = format.vcodec && format.vcodec !== 'none';
+                const isAudio = format.acodec && format.acodec !== 'none';
                 
                 const media = {
-                    formatId: parseInt(format.itag || Math.random() * 1000),
-                    label: `${format.container || 'mp4'} (${format.quality || 'unknown'})`,
-                    type: isVideo ? 'video' : 'audio',
-                    ext: format.container || 'mp4',
-                    quality: format.quality || 'unknown',
-                    width: format.width || null,
-                    height: format.height || null,
-                    url: format.url,
-                    bitrate: format.bitrate || null,
+                    itag: format.format_id,
+                    ext: format.ext,
+                    resolution: format.resolution || null,
                     fps: format.fps || null,
-                    audioQuality: isAudio ? 'AUDIO_QUALITY_MEDIUM' : null,
-                    audioSampleRate: null,
-                    mimeType: `${isVideo ? 'video' : 'audio'}/${format.container || 'mp4'}`,
-                    duration: parseInt(info.video_details.durationInSec),
-                    is_audio: isAudio,
-                    extension: format.container || 'mp4'
+                    filesizeMB: format.filesize ? Math.round(format.filesize / (1024 * 1024) * 100) / 100 : "?",
+                    tbr: format.tbr || null,
+                    vcodec: format.vcodec || null,
+                    acodec: format.acodec || null,
+                    url: format.url,
+                    // Keep existing fields for compatibility
+                    formatId: parseInt(format.format_id),
+                    type: isVideo ? 'video' : 'audio',
+                    quality: `${format.ext} (${format.height ? format.height + 'p' : format.abr ? format.abr + 'kb/s' : 'audio'})`,
+                    is_audio: isAudio
                 };
                 medias.push(media);
-            });
-
-            const response = {
-                url: url,
-                source: 'youtube',
-                title: info.video_details.title,
-                author: info.video_details.channel?.name || '',
-                thumbnail: info.video_details.thumbnails?.[0]?.url || '',
-                duration: parseInt(info.video_details.durationInSec),
-                medias: medias,
-                type: 'multiple',
-                error: false,
-                time_end: Date.now() % 1000
-            };
-
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify(response)
-            };
-            
-        } catch (error) {
-            // If YouTube is blocking, return a helpful message instead of error
-            if (error.message.includes('Sign in to confirm')) {
-                return {
-                    statusCode: 200,
-                    headers,
-                    body: JSON.stringify({
-                        url: url || 'Unknown URL',
-                        source: 'youtube',
-                        title: 'YouTube Video (Bot Detection Active)',
-                        author: 'YouTube',
-                        thumbnail: 'https://via.placeholder.com/480x360?text=YouTube+Bot+Detection',
-                        duration: 0,
-                        medias: [{
-                            formatId: 999,
-                            label: 'Direct YouTube Link',
-                            type: 'video',
-                            ext: 'mp4',
-                            quality: 'Visit YouTube directly',
-                            width: null,
-                            height: null,
-                            url: url,
-                            bitrate: null,
-                            fps: null,
-                            audioQuality: null,
-                            audioSampleRate: null,
-                            mimeType: 'video/mp4',
-                            duration: 0,
-                            is_audio: false,
-                            extension: 'mp4'
-                        }],
-                        type: 'multiple',
-                        error: false,
-                        message: 'YouTube is currently blocking automated requests. Please visit the video directly on YouTube.',
-                        time_end: Date.now() % 1000
-                    })
-                };
             }
-            
-            return {
-                statusCode: 500,
-                headers,
-                body: JSON.stringify({ 
-                    error: true,
-                    message: error.message 
-                })
-            };
-        }
-    };
+        });
+
+        const response = {
+            url: url,
+            source: 'youtube',
+            title: info.title,
+            author: info.uploader || '',
+            thumbnail: info.thumbnail,
+            duration: Math.round(info.duration),
+            medias: medias,
+            type: 'multiple',
+            error: false,
+            time_end: Date.now() % 1000
+        };
+
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify(response)
+        };
+        
+    } catch (error) {
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+                error: true,
+                message: error.message 
+            })
+        };
+    }
+};
