@@ -118,6 +118,44 @@
             };
             
         } catch (error) {
+            // If YouTube is blocking, return a helpful message instead of error
+            if (error.message.includes('Sign in to confirm')) {
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({
+                        url: url,
+                        source: 'youtube',
+                        title: 'YouTube Video (Bot Detection Active)',
+                        author: 'YouTube',
+                        thumbnail: 'https://via.placeholder.com/480x360?text=YouTube+Bot+Detection',
+                        duration: 0,
+                        medias: [{
+                            formatId: 999,
+                            label: 'Direct YouTube Link',
+                            type: 'video',
+                            ext: 'mp4',
+                            quality: 'Visit YouTube directly',
+                            width: null,
+                            height: null,
+                            url: url,
+                            bitrate: null,
+                            fps: null,
+                            audioQuality: null,
+                            audioSampleRate: null,
+                            mimeType: 'video/mp4',
+                            duration: 0,
+                            is_audio: false,
+                            extension: 'mp4'
+                        }],
+                        type: 'multiple',
+                        error: false,
+                        message: 'YouTube is currently blocking automated requests. Please visit the video directly on YouTube.',
+                        time_end: Date.now() % 1000
+                    })
+                };
+            }
+            
             return {
                 statusCode: 500,
                 headers,
