@@ -1,7 +1,5 @@
-const { exec } = require('child_process');
-const { promisify } = require('util');
+const ytdlp = require('@distube/yt-dlp');
 const path = require('path');
-const execAsync = promisify(exec);
 
 exports.handler = async (event, context) => {
     const headers = {
@@ -34,8 +32,10 @@ exports.handler = async (event, context) => {
         }
 
         const cookiesPath = path.join(process.cwd(), 'cookies', 'cookies.txt');
-        const { stdout } = await execAsync(`yt-dlp --cookies "${cookiesPath}" -J "${url}"`);
-        const info = JSON.parse(stdout);
+        const info = await ytdlp.getInfo(url, {
+            cookies: cookiesPath,
+            dumpSingleJson: true
+        });
         const medias = [];
 
         // Process all formats
