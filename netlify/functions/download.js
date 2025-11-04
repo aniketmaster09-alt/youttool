@@ -31,10 +31,9 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const cookiesPath = path.join(process.cwd(), 'cookies', 'cookies.txt');
         const info = await youtubedl(url, {
-            dumpSingleJson: true,
-            cookies: cookiesPath
+            j: true,
+            flatPlaylist: true
         });
         
         if (!info || !info.formats) {
