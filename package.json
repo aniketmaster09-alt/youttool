@@ -1,11 +1,11 @@
 {
-  "name": "youtube-downloader",
+  "name": "yt-info-netlify",
   "version": "1.0.0",
+  "main": "netlify/functions/download.js",
   "scripts": {
-    "build": "echo 'No build required'"
+    "build": "echo 'No build needed'"
   },
   "dependencies": {
-    "puppeteer-core": "^22.0.0",
-    "chrome-aws-lambda": "^10.1.0"
+    "yt-dlp-exec": "2.4.0"
   }
 }
